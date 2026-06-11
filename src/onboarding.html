@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sisyphus setup</title>
+    <script type="module" src="./onboarding.ts"></script>
+  </head>
+  <body>
+    <main class="onboarding page">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Sisyphus</p>
+          <h1>Tabs that quietly stay where they belong.</h1>
+          <p class="copy">
+            Sisyphus learns from your browsing, groups related work, stages stale
+            tabs, and keeps every action reversible from the sidebar.
+          </p>
+        </div>
+        <div class="browser-frame" aria-hidden="true">
+          <div class="toolbar">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="tab-row">
+            <div class="tab dev">Dev</div>
+            <div class="tab mail">Mail</div>
+            <div class="tab research">Research</div>
+          </div>
+          <div class="action-card">
+            <strong>Moved related tabs together</strong>
+            <span>Undo</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="setup">
+        <div class="section-copy">
+          <h2>Choose how much it can manage.</h2>
+          <p>
+            You can change this later. The first 150 meaningful tab events are a
+            learning phase, so actions start small and reversible.
+          </p>
+        </div>
+        <div class="levels" id="levels">
+          <button class="level" data-level="minimal">
+            <strong>Minimal</strong>
+            <span>Light ordering and low-risk changes.</span>
+          </button>
+          <button class="level" data-level="medium">
+            <strong>Medium</strong>
+            <span>Grouping, cleanup staging, and ordering.</span>
+          </button>
+          <button class="level selected" data-level="maximum">
+            <strong>Maximum</strong>
+            <span>Full quiet automation, including stale-tab closing.</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="notes">
+        <div>
+          <h3>Undo stack</h3>
+          <p>Open the sidebar to undo or redo recent tab changes.</p>
+        </div>
+        <div>
+          <h3>Right-click protection</h3>
+          <p>Protect the exact tab, or a group when the tab is grouped.</p>
+        </div>
+        <div>
+          <h3>Local learning</h3>
+          <p>Behavior stays in Chrome extension storage and can be exported.</p>
+        </div>
+      </section>
+
+      <footer>
+        <button id="start" class="primary">Start Sisyphus</button>
+      </footer>
+    </main>
+  </body>
+</html>

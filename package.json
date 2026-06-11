@@ -1,0 +1,20 @@
+{
+  "name": "sisyphus-tab-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A quiet Chrome extension that learns how you use tabs and keeps them organized.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.305",
+    "@types/node": "25.9.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4"
+  }
+}

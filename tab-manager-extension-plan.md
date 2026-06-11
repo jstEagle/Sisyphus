@@ -95,6 +95,13 @@ the user prefers without requiring constant manual cleanup.
   management.
 - Confidence should stay internal. Users should not need to understand scores
   or model state.
+- Core tab management should use a local adaptive scoring engine rather than a
+  heavy neural network or cloud model in the first complete version.
+- The learning system can be ML-like: an online, user-specific ranking/scoring
+  model that learns from rewards and penalties such as undo, reopen-after-close,
+  repeated switching, manual regrouping, and protected tabs.
+- Later versions can add local embeddings, clustering, or classifiers if the
+  adaptive scoring engine is not expressive enough.
 - Onboarding and settings should let users choose the extension's management
   level:
   - Minimal: light organization and low-risk reversible actions.
@@ -196,6 +203,8 @@ the user prefers without requiring constant manual cleanup.
   - Export/import should support transferring local state across Chrome
     profiles or browsers without requiring an account or server.
 - Learning signals:
+  - The first implementation should be a transparent local feature/scoring
+    model, not an LLM or server-trained model.
   - Initial post-onboarding period should emphasize observation and fast
     learning before becoming more assertive.
   - The warmup should last until a useful activity threshold is reached, such as

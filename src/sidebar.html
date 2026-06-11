@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sisyphus Stack</title>
+    <script type="module" src="./sidebar.ts"></script>
+  </head>
+  <body>
+    <main class="sidebar">
+      <section id="learning" class="learning">
+        <div class="fill" id="fill"></div>
+        <div class="learning-copy">
+          <strong>Learning</strong>
+          <span id="learningText">0 / 150 events</span>
+        </div>
+      </section>
+
+      <header>
+        <h1>Stack</h1>
+        <button id="refresh" class="ghost">Refresh</button>
+      </header>
+
+      <section id="actions" class="action-stack"></section>
+      <section id="empty" class="empty">
+        <strong>No actions yet</strong>
+        <span>Sisyphus will list reversible tab changes here.</span>
+      </section>
+    </main>
+  </body>
+</html>

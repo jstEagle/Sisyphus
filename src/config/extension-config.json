@@ -1,0 +1,32 @@
+{
+  "warmupEventTarget": 150,
+  "cleanupGroupTtlHours": 24,
+  "defaultInactiveCloseHours": 15,
+  "recentActionLimit": 80,
+  "maxEventsStored": 1200,
+  "automationIntervalMinutes": 10,
+  "githubUrl": "https://github.com/jstEagle/Sisyphus",
+  "managementLevels": {
+    "minimal": {
+      "allowOpen": false,
+      "allowClose": false,
+      "allowReorder": true,
+      "allowGroup": false,
+      "allowCleanupGroup": false
+    },
+    "medium": {
+      "allowOpen": false,
+      "allowClose": false,
+      "allowReorder": true,
+      "allowGroup": true,
+      "allowCleanupGroup": true
+    },
+    "maximum": {
+      "allowOpen": true,
+      "allowClose": true,
+      "allowReorder": true,
+      "allowGroup": true,
+      "allowCleanupGroup": true
+    }
+  }
+}

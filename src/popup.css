@@ -1,0 +1,59 @@
+body {
+  width: 340px;
+}
+
+.popup {
+  display: grid;
+  gap: 18px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+h1 {
+  margin: 0 0 2px;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.toggles {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.toggles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  font-size: 13px;
+}
+
+.toggles input {
+  accent-color: var(--accent);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+footer {
+  padding-top: 2px;
+  font-size: 12px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+}

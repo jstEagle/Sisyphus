@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sisyphus</title>
+    <script type="module" src="./popup.ts"></script>
+  </head>
+  <body>
+    <main class="popup">
+      <header class="row">
+        <div>
+          <h1>Sisyphus</h1>
+          <p id="status" class="muted">Loading</p>
+        </div>
+        <label class="switch">
+          <input id="enabled" type="checkbox" />
+          <span>On</span>
+        </label>
+      </header>
+
+      <section class="stack">
+        <div class="field">
+          <label for="level">Management</label>
+          <select id="level">
+            <option value="minimal">Minimal</option>
+            <option value="medium">Medium</option>
+            <option value="maximum">Maximum</option>
+          </select>
+        </div>
+
+        <div class="toggles">
+          <label><input id="allowReorder" type="checkbox" /> Reorder</label>
+          <label><input id="allowGroup" type="checkbox" /> Group</label>
+          <label><input id="allowCleanupGroup" type="checkbox" /> Stage cleanup</label>
+          <label><input id="allowClose" type="checkbox" /> Close stale tabs</label>
+          <label><input id="allowOpen" type="checkbox" /> Open/restore tabs</label>
+        </div>
+
+        <div class="field">
+          <label for="inactiveHours">Base inactive close hours</label>
+          <input id="inactiveHours" type="number" min="1" max="168" />
+        </div>
+      </section>
+
+      <section class="actions">
+        <button id="sidebar">Open stack</button>
+        <button id="export">Export</button>
+        <button id="import">Import</button>
+        <input id="importFile" type="file" accept="application/json" hidden />
+      </section>
+
+      <footer class="row">
+        <a id="github" target="_blank" rel="noreferrer">GitHub</a>
+        <span id="protectedCount" class="muted"></span>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Sisyphus",
+  "version": "0.1.0",
+  "description": "Quietly learns how you use tabs and keeps them organized.",
+  "permissions": [
+    "alarms",
+    "contextMenus",
+    "sessions",
+    "sidePanel",
+    "storage",
+    "tabGroups",
+    "tabs"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "assets/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Sisyphus",
+    "default_popup": "popup.html"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "options_page": "onboarding.html",
+  "commands": {
+    "undo-last-action": {
+      "suggested_key": {
+        "default": "Alt+Shift+Z",
+        "mac": "MacCtrl+Shift+Z"
+      },
+      "description": "Undo the last Sisyphus tab action"
+    },
+    "redo-last-action": {
+      "suggested_key": {
+        "default": "Alt+Shift+Y",
+        "mac": "MacCtrl+Shift+Y"
+      },
+      "description": "Redo the last Sisyphus tab action"
+    }
+  }
+}
