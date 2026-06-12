@@ -107,24 +107,87 @@ export function rememberTabs(state: RuntimeState, tabs: TabSnapshot[]): RuntimeS
 export function learnFromUndo(state: RuntimeState, action: ExtensionAction): RuntimeState {
   let next = recordEvent(state, { type: "undo" });
   const domains = { ...next.domains };
+  const tabPreferences = { ...next.tabPreferences };
+  const now = Date.now();
 
   for (const snapshot of action.snapshots) {
     const domain = new URL(snapshot.url).hostname.replace(/^www\./, "");
-    const existing = domains[domain] ?? createDomainLearning(domain, Date.now());
+    const existing = domains[domain] ?? createDomainLearning(domain, now);
+    const existingPreference = tabPreferences[normalizeUrlForProtection(snapshot.url)] ?? {
+      url: normalizeUrlForProtection(snapshot.url),
+      ungroupCount: 0,
+      updatedAt: now
+    };
     domains[domain] = {
       ...existing,
       keepScore: existing.keepScore + 5,
       closeScore: Math.max(0, existing.closeScore - 4),
+      groupDislikeScore:
+        (existing.groupDislikeScore ?? 0) + (action.type === "group-tabs" ? 4 : 0),
+      cleanupDislikeScore:
+        (existing.cleanupDislikeScore ?? 0) + (action.type === "move-to-cleanup" ? 5 : 0),
       undoCount: existing.undoCount + 1,
       inactiveCloseHours: Math.max(existing.inactiveCloseHours ?? 0, 24)
+    };
+    tabPreferences[existingPreference.url] = {
+      ...existingPreference,
+      ...(action.type === "group-tabs"
+        ? { avoidGroupingUntil: now + 7 * 24 * 3_600_000 }
+        : {}),
+      ...(action.type === "move-to-cleanup"
+        ? { avoidCleanupUntil: now + 7 * 24 * 3_600_000 }
+        : {}),
+      updatedAt: now
     };
   }
 
   next = {
     ...next,
-    domains
+    domains,
+    tabPreferences
   };
   return next;
+}
+
+export function learnFromManualUngroup(
+  state: RuntimeState,
+  tab: TabSnapshot,
+  previousGroupTitle?: string
+): RuntimeState {
+  const now = Date.now();
+  const key = normalizeUrlForProtection(tab.url);
+  const existingPreference = state.tabPreferences[key] ?? {
+    url: key,
+    ungroupCount: 0,
+    updatedAt: now
+  };
+  const existingDomain = state.domains[tab.domain] ?? createDomainLearning(tab.domain, now);
+  const wasCleanupGroup = previousGroupTitle === "Later";
+
+  return {
+    ...recordEvent(state, tabEventFromSnapshot("ungrouped", tab)),
+    domains: {
+      ...state.domains,
+      [tab.domain]: {
+        ...existingDomain,
+        groupDislikeScore: (existingDomain.groupDislikeScore ?? 0) + 3,
+        cleanupDislikeScore:
+          (existingDomain.cleanupDislikeScore ?? 0) + (wasCleanupGroup ? 6 : 0),
+        keepScore: existingDomain.keepScore + 2,
+        lastSeenAt: now
+      }
+    },
+    tabPreferences: {
+      ...state.tabPreferences,
+      [key]: {
+        ...existingPreference,
+        ungroupCount: existingPreference.ungroupCount + 1,
+        avoidGroupingUntil: now + 14 * 24 * 3_600_000,
+        ...(wasCleanupGroup ? { avoidCleanupUntil: now + 14 * 24 * 3_600_000 } : {}),
+        updatedAt: now
+      }
+    }
+  };
 }
 
 export function learnWorkflowSwitch(
@@ -284,8 +347,10 @@ function planGroups(state: RuntimeState, tabs: TabCandidate[]): PlannedAction[] 
   const byCategory = new Map<string, TabCandidate[]>();
   for (const tab of tabs) {
     if (tab.protected || !tab.id || tab.groupId !== undefined) continue;
+    if (shouldAvoidGrouping(state, tab)) continue;
     const category = categoryForDomain(state, tab.domain);
     if (!category) continue;
+    if (category.score < 6 && !isWarmup(state)) continue;
     const current = byCategory.get(category.id) ?? [];
     current.push(tab);
     byCategory.set(category.id, current);
@@ -336,8 +401,9 @@ function planCleanupGroups(
 ): PlannedAction[] {
   const inactive = tabs.filter((tab) => {
     if (tab.protected || !tab.id) return false;
+    if (shouldAvoidCleanup(state, tab, now)) return false;
     const inactiveHours = (now - tab.lastAccessedAt) / 3_600_000;
-    const threshold = inactiveThresholdForTab(state, tab) * 0.7;
+    const threshold = inactiveThresholdForTab(state, tab) * 0.95;
     return inactiveHours >= threshold;
   });
 
@@ -375,12 +441,27 @@ function isProtected(state: RuntimeState, tab: TabSnapshot): boolean {
   return false;
 }
 
+function shouldAvoidGrouping(state: RuntimeState, tab: TabSnapshot): boolean {
+  const preference = state.tabPreferences[normalizeUrlForProtection(tab.url)];
+  if (preference?.avoidGroupingUntil && preference.avoidGroupingUntil > Date.now()) return true;
+  const domain = state.domains[tab.domain];
+  return (domain?.groupDislikeScore ?? 0) >= 6;
+}
+
+function shouldAvoidCleanup(state: RuntimeState, tab: TabSnapshot, now: number): boolean {
+  const preference = state.tabPreferences[normalizeUrlForProtection(tab.url)];
+  if (preference?.avoidCleanupUntil && preference.avoidCleanupUntil > now) return true;
+  const domain = state.domains[tab.domain];
+  return (domain?.cleanupDislikeScore ?? 0) >= 6;
+}
+
 function inactiveThresholdForTab(state: RuntimeState, tab: TabSnapshot): number {
   const learning = state.domains[tab.domain];
   if (!learning) return state.settings.inactiveCloseHours;
   const learned = learning.inactiveCloseHours ?? state.settings.inactiveCloseHours;
   const keepBias = Math.max(0, learning.keepScore - learning.closeScore);
-  return Math.min(72, learned + keepBias * 0.5 + learning.reopenCount * 3);
+  const cleanupDislikeBias = (learning.cleanupDislikeScore ?? 0) * 3;
+  return Math.min(96, learned + keepBias * 0.5 + learning.reopenCount * 3 + cleanupDislikeBias);
 }
 
 function categoryForDomain(
@@ -440,9 +521,25 @@ function createDomainLearning(domain: string, at: number): DomainLearning {
     domain,
     keepScore: 0,
     closeScore: 0,
+    groupDislikeScore: 0,
+    cleanupDislikeScore: 0,
     reopenCount: 0,
     undoCount: 0,
     lastSeenAt: at
+  };
+}
+
+function tabEventFromSnapshot(
+  type: TabEventType,
+  tab: TabSnapshot
+): Omit<TabEvent, "id" | "at"> {
+  return {
+    type,
+    ...(tab.id !== undefined ? { tabId: tab.id } : {}),
+    windowId: tab.windowId,
+    ...(tab.groupId !== undefined ? { groupId: tab.groupId } : {}),
+    url: tab.url,
+    domain: tab.domain
   };
 }
 

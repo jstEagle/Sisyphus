@@ -2,9 +2,11 @@ import { extensionConfig, defaultSettings } from "./config";
 import type { RuntimeState, Settings } from "./types";
 
 const STORAGE_KEY = "sisyphus.runtimeState";
+const STATE_VERSION = 2;
 
 export function createInitialState(settings: Settings = defaultSettings()): RuntimeState {
   return {
+    stateVersion: STATE_VERSION,
     settings,
     tabMemory: {},
     events: [],
@@ -13,6 +15,7 @@ export function createInitialState(settings: Settings = defaultSettings()): Runt
     categories: {},
     domains: {},
     workflowPairs: {},
+    tabPreferences: {},
     protectedTabs: {},
     protectedGroups: {},
     cleanupGroups: {}
@@ -25,7 +28,7 @@ export async function loadState(): Promise<RuntimeState> {
   if (!saved) return createInitialState();
 
   const defaults = createInitialState();
-  return {
+  const merged = {
     ...defaults,
     ...saved,
     settings: {
@@ -33,6 +36,14 @@ export async function loadState(): Promise<RuntimeState> {
       ...saved.settings
     }
   };
+  if (saved.stateVersion !== STATE_VERSION) {
+    merged.stateVersion = STATE_VERSION;
+    merged.settings = {
+      ...merged.settings,
+      allowGroup: false
+    };
+  }
+  return merged;
 }
 
 export async function saveState(state: RuntimeState): Promise<void> {

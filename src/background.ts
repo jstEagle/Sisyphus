@@ -1,6 +1,7 @@
 import { extensionConfig } from "./core/config";
 import {
   createAction,
+  learnFromManualUngroup,
   learnFromUndo,
   learnWorkflowSwitch,
   markRedone,
@@ -102,10 +103,18 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   void withState(async (state) => {
     let next = state;
     const snapshot = snapshotFromChromeTab(tab);
+    const remembered = state.tabMemory[tabId];
     if (changeInfo.pinned === true) {
       next = recordEvent(next, tabEvent("pinned", snapshot));
     } else if (changeInfo.pinned === false) {
       next = recordEvent(next, tabEvent("unpinned", snapshot));
+    }
+    if ("groupId" in changeInfo) {
+      if (changeInfo.groupId === chrome.tabGroups.TAB_GROUP_ID_NONE) {
+        next = learnFromManualUngroup(next, snapshot, remembered?.groupTitle);
+      } else if (typeof changeInfo.groupId === "number") {
+        next = recordEvent(next, tabEvent("grouped", { ...snapshot, groupId: changeInfo.groupId }));
+      }
     }
     if (changeInfo.url) {
       next = recordEvent(next, tabEvent("opened", snapshot));
@@ -226,6 +235,10 @@ async function handleMessage(message: unknown): Promise<unknown> {
   if (message.type === "open-sidebar") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.windowId !== undefined) {
+      await chrome.sidePanel.setOptions({
+        path: "sidebar.html",
+        enabled: true
+      });
       await chrome.sidePanel.open({ windowId: tab.windowId });
     }
     return true;

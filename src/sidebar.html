@@ -8,23 +8,31 @@
   </head>
   <body>
     <main class="sidebar">
-      <section id="learning" class="learning">
-        <div class="fill" id="fill"></div>
-        <div class="learning-copy">
-          <strong>Learning</strong>
-          <span id="learningText">0 / 150 events</span>
+      <header class="side-head">
+        <div>
+          <p class="cipher">Sisyphus // log</p>
+          <h1>Stack</h1>
         </div>
-      </section>
-
-      <header>
-        <h1>Stack</h1>
-        <button id="refresh" class="ghost">Refresh</button>
+        <button id="refresh" class="ghost">Sync</button>
       </header>
 
+      <section id="learning" class="learning">
+        <div class="learning-head">
+          <span class="cipher bright">Calibrating</span>
+          <span id="learningPct" class="cipher bright">0%</span>
+        </div>
+        <div class="bar"><div class="fill" id="fill"></div></div>
+        <span id="learningText" class="cipher">0 / 150 events</span>
+      </section>
+
       <section id="actions" class="action-stack"></section>
+
       <section id="empty" class="empty">
-        <strong>No actions yet</strong>
-        <span>Sisyphus will list reversible tab changes here.</span>
+        <div class="cipher-field" id="emptyField" aria-hidden="true"></div>
+        <div class="empty-copy">
+          <span class="cipher bright">No actions logged</span>
+          <span>Reversible tab changes will appear here.</span>
+        </div>
       </section>
     </main>
   </body>

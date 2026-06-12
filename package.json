@@ -8,7 +8,9 @@
     "build": "vite build",
     "check": "tsc --noEmit",
     "test": "vitest run",
-    "dev": "vite build --watch"
+    "dev": "vite build --watch",
+    "package": "npm run build && npm run package:zip",
+    "package:zip": "rm -f sisyphus-extension.zip && cd dist && zip -r ../sisyphus-extension.zip ."
   },
   "devDependencies": {
     "@types/chrome": "^0.0.305",

@@ -2,9 +2,13 @@ import "./styles.css";
 import "./onboarding.css";
 import { settingsForLevel } from "./core/config";
 import type { ManagementLevel } from "./core/types";
+import { cipherField } from "./ui/fx";
 import { loadRuntimeState, sendMessage } from "./ui/messages";
 
 let selectedLevel: ManagementLevel = "maximum";
+
+const field = document.getElementById("cipherField");
+if (field) cipherField(field, 0.12);
 
 document.querySelectorAll<HTMLButtonElement>(".level").forEach((button) => {
   button.addEventListener("click", () => {

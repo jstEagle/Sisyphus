@@ -112,6 +112,8 @@ export interface DomainLearning {
   categoryId?: string;
   keepScore: number;
   closeScore: number;
+  groupDislikeScore?: number;
+  cleanupDislikeScore?: number;
   reopenCount: number;
   undoCount: number;
   lastSeenAt: number;
@@ -138,6 +140,14 @@ export interface ProtectedGroup {
   createdAt: number;
 }
 
+export interface TabPreference {
+  url: string;
+  ungroupCount: number;
+  avoidGroupingUntil?: number;
+  avoidCleanupUntil?: number;
+  updatedAt: number;
+}
+
 export interface ActionSnapshot {
   url: string;
   title?: string;
@@ -162,6 +172,7 @@ export interface ExtensionAction {
 }
 
 export interface RuntimeState {
+  stateVersion: number;
   settings: Settings;
   tabMemory: Record<number, TabSnapshot>;
   events: TabEvent[];
@@ -170,6 +181,7 @@ export interface RuntimeState {
   categories: Record<string, LearnedCategory>;
   domains: Record<string, DomainLearning>;
   workflowPairs: Record<string, WorkflowPair>;
+  tabPreferences: Record<string, TabPreference>;
   protectedTabs: Record<string, ProtectedTab>;
   protectedGroups: Record<string, ProtectedGroup>;
   cleanupGroups: Record<number, { createdAt: number; expiresAt: number }>;

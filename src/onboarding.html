@@ -7,10 +7,11 @@
     <script type="module" src="./onboarding.ts"></script>
   </head>
   <body>
+    <div class="cipher-field" id="cipherField" aria-hidden="true"></div>
     <main class="onboarding page">
       <section class="hero">
         <div>
-          <p class="eyebrow">Sisyphus</p>
+          <p class="eyebrow cipher bright">Sisyphus // tab daemon</p>
           <h1>Tabs that quietly stay where they belong.</h1>
           <p class="copy">
             Sisyphus learns from your browsing, groups related work, stages stale
@@ -20,6 +21,7 @@
         <div class="browser-frame" aria-hidden="true">
           <div class="toolbar">
             <span></span><span></span><span></span>
+            <em class="cipher">chrome://tabs · managed</em>
           </div>
           <div class="tab-row">
             <div class="tab dev">Dev</div>
@@ -28,13 +30,14 @@
           </div>
           <div class="action-card">
             <strong>Moved related tabs together</strong>
-            <span>Undo</span>
+            <span class="cipher bright">Undo</span>
           </div>
         </div>
       </section>
 
       <section class="setup">
         <div class="section-copy">
+          <p class="cipher">Section 01 · Authority</p>
           <h2>Choose how much it can manage.</h2>
           <p>
             You can change this later. The first 150 meaningful tab events are a
@@ -43,14 +46,17 @@
         </div>
         <div class="levels" id="levels">
           <button class="level" data-level="minimal">
+            <span class="cipher">Level 01</span>
             <strong>Minimal</strong>
             <span>Light ordering and low-risk changes.</span>
           </button>
           <button class="level" data-level="medium">
+            <span class="cipher">Level 02</span>
             <strong>Medium</strong>
             <span>Grouping, cleanup staging, and ordering.</span>
           </button>
           <button class="level selected" data-level="maximum">
+            <span class="cipher">Level 03</span>
             <strong>Maximum</strong>
             <span>Full quiet automation, including stale-tab closing.</span>
           </button>
@@ -59,20 +65,24 @@
 
       <section class="notes">
         <div>
+          <p class="cipher">01</p>
           <h3>Undo stack</h3>
           <p>Open the sidebar to undo or redo recent tab changes.</p>
         </div>
         <div>
+          <p class="cipher">02</p>
           <h3>Right-click protection</h3>
           <p>Protect the exact tab, or a group when the tab is grouped.</p>
         </div>
         <div>
+          <p class="cipher">03</p>
           <h3>Local learning</h3>
           <p>Behavior stays in Chrome extension storage and can be exported.</p>
         </div>
       </section>
 
       <footer>
+        <span class="cipher">Reversible · local · quiet</span>
         <button id="start" class="primary">Start Sisyphus</button>
       </footer>
     </main>

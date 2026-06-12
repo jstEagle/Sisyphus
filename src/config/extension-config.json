@@ -18,14 +18,14 @@
       "allowOpen": false,
       "allowClose": false,
       "allowReorder": true,
-      "allowGroup": true,
+      "allowGroup": false,
       "allowCleanupGroup": true
     },
     "maximum": {
       "allowOpen": true,
       "allowClose": true,
       "allowReorder": true,
-      "allowGroup": true,
+      "allowGroup": false,
       "allowCleanupGroup": true
     }
   }

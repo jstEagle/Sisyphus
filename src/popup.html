@@ -8,51 +8,72 @@
   </head>
   <body>
     <main class="popup">
-      <header class="row">
-        <div>
-          <h1>Sisyphus</h1>
-          <p id="status" class="muted">Loading</p>
+      <header class="popup-head">
+        <div class="brand">
+          <h1><span class="mark" aria-hidden="true"></span>Sisyphus</h1>
+          <p class="status">
+            <span id="statusDot" class="dot" aria-hidden="true"></span>
+            <span id="status" class="cipher bright">Booting</span>
+          </p>
         </div>
         <label class="switch">
-          <input id="enabled" type="checkbox" />
-          <span>On</span>
+          <input id="enabled" type="checkbox" aria-label="Enable Sisyphus" />
+          <span class="track" aria-hidden="true"></span>
         </label>
       </header>
 
-      <section class="stack">
-        <div class="field">
-          <label for="level">Management</label>
-          <select id="level">
-            <option value="minimal">Minimal</option>
-            <option value="medium">Medium</option>
-            <option value="maximum">Maximum</option>
-          </select>
+      <section class="panel">
+        <p class="cipher panel-label">Management level</p>
+        <div class="segmented" id="level" role="group" aria-label="Management level">
+          <button type="button" data-level="minimal">Min</button>
+          <button type="button" data-level="medium">Med</button>
+          <button type="button" data-level="maximum">Max</button>
         </div>
+      </section>
 
+      <section class="panel">
+        <p class="cipher panel-label">Permissions</p>
         <div class="toggles">
-          <label><input id="allowReorder" type="checkbox" /> Reorder</label>
-          <label><input id="allowGroup" type="checkbox" /> Group</label>
-          <label><input id="allowCleanupGroup" type="checkbox" /> Stage cleanup</label>
-          <label><input id="allowClose" type="checkbox" /> Close stale tabs</label>
-          <label><input id="allowOpen" type="checkbox" /> Open/restore tabs</label>
-        </div>
-
-        <div class="field">
-          <label for="inactiveHours">Base inactive close hours</label>
-          <input id="inactiveHours" type="number" min="1" max="168" />
+          <label class="toggle-row">
+            <span>Reorder tabs</span>
+            <span class="switch"><input id="allowReorder" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
+          </label>
+          <label class="toggle-row">
+            <span>Group related tabs</span>
+            <span class="switch"><input id="allowGroup" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
+          </label>
+          <label class="toggle-row">
+            <span>Stage cleanup groups</span>
+            <span class="switch"><input id="allowCleanupGroup" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
+          </label>
+          <label class="toggle-row">
+            <span>Close stale tabs</span>
+            <span class="switch"><input id="allowClose" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
+          </label>
+          <label class="toggle-row">
+            <span>Open / restore tabs</span>
+            <span class="switch"><input id="allowOpen" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
+          </label>
+          <label class="toggle-row hours-row">
+            <span>Close after inactive</span>
+            <span class="hours">
+              <input id="inactiveHours" type="number" min="1" max="168" />
+              <span class="cipher">hrs</span>
+            </span>
+          </label>
         </div>
       </section>
 
       <section class="actions">
-        <button id="sidebar">Open stack</button>
+        <button id="sidebar">Stack</button>
         <button id="export">Export</button>
         <button id="import">Import</button>
         <input id="importFile" type="file" accept="application/json" hidden />
       </section>
 
-      <footer class="row">
-        <a id="github" target="_blank" rel="noreferrer">GitHub</a>
-        <span id="protectedCount" class="muted"></span>
+      <footer class="popup-foot">
+        <a id="github" class="cipher" target="_blank" rel="noreferrer">GitHub ↗</a>
+        <span id="protectedCount" class="cipher"></span>
       </footer>
     </main>
   </body>

@@ -4,41 +4,94 @@ body {
 
 .popup {
   display: grid;
-  gap: 18px;
+  gap: 16px;
   padding: 16px;
-  background: var(--surface);
 }
 
-h1 {
-  margin: 0 0 2px;
-  font-size: 18px;
-  letter-spacing: 0;
+.popup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
 }
 
-p {
+.brand h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin: 0;
-  font-size: 12px;
+}
+
+.panel {
+  display: grid;
+  gap: 8px;
+}
+
+.panel-label {
+  margin: 0;
 }
 
 .toggles {
   display: grid;
-  gap: 8px;
-  padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8fafc;
+  border-radius: 6px;
+  background: var(--surface);
+  overflow: hidden;
 }
 
-.toggles label {
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.toggle-row:hover {
+  background: var(--surface-2);
+}
+
+.toggle-row + .toggle-row {
+  border-top: 1px solid var(--line);
+}
+
+.hours-row {
+  cursor: default;
+}
+
+.hours {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 24px;
-  font-size: 13px;
 }
 
-.toggles input {
-  accent-color: var(--accent);
+.hours input {
+  width: 58px;
 }
 
 .actions {
@@ -47,13 +100,19 @@ p {
   gap: 8px;
 }
 
-footer {
-  padding-top: 2px;
-  font-size: 12px;
+.popup-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 
-a {
-  color: var(--accent);
+.popup-foot a {
   text-decoration: none;
-  font-weight: 700;
+  transition: color 140ms ease;
+}
+
+.popup-foot a:hover {
+  color: var(--accent);
 }

@@ -18,7 +18,22 @@ actions.
 - Uses a right-click context menu to protect the current tab or current group.
 - Avoids notifications by default.
 
-## Install From The Repo
+## Install The Latest Build
+
+The easiest path is the GitHub-built zip:
+
+1. Download
+   [`sisyphus-extension.zip`](https://github.com/jstEagle/Sisyphus/releases/latest/download/sisyphus-extension.zip).
+2. Unzip it somewhere you will not delete, such as `~/Applications/Sisyphus`.
+3. Open `chrome://extensions` in Chrome, Helium, or another Chromium browser.
+4. Enable **Developer mode**.
+5. Click **Load unpacked**.
+6. Select the unzipped folder.
+
+When a new stable build is pushed to `main`, GitHub rebuilds the extension and
+updates that zip.
+
+## Install From Source
 
 1. Run `npm install`.
 2. Run `npm run build`.
@@ -26,6 +41,29 @@ actions.
 4. Enable Developer mode.
 5. Choose **Load unpacked**.
 6. Select the `dist` folder.
+
+## Agent Download Instructions
+
+Agents should use the latest release zip when they only need the built
+extension:
+
+```bash
+curl -L \
+  https://github.com/jstEagle/Sisyphus/releases/latest/download/sisyphus-extension.zip \
+  -o sisyphus-extension.zip
+unzip -o sisyphus-extension.zip -d sisyphus-extension
+```
+
+Agents should use source when they need to edit or rebuild:
+
+```bash
+git clone https://github.com/jstEagle/Sisyphus.git
+cd Sisyphus
+npm ci
+npm run build
+```
+
+The loadable unpacked extension folder is then `dist`.
 
 ## Development
 
@@ -42,6 +80,12 @@ Then reload the unpacked extension from `chrome://extensions`.
 npm run check
 npm test
 npm run build
+```
+
+To create the same zip locally:
+
+```bash
+npm run package
 ```
 
 ## Configuration

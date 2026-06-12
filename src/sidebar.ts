@@ -2,13 +2,17 @@ import "./styles.css";
 import "./sidebar.css";
 import { warmupProgress } from "./core/engine";
 import type { ExtensionAction, RuntimeState } from "./core/types";
+import { cipherField } from "./ui/fx";
 import { loadRuntimeState, sendMessage } from "./ui/messages";
 
 const actions = element<HTMLElement>("actions");
 const empty = element<HTMLElement>("empty");
 const learning = element<HTMLElement>("learning");
 const fill = element<HTMLElement>("fill");
+const learningPct = element<HTMLElement>("learningPct");
 const learningText = element<HTMLElement>("learningText");
+
+cipherField(element<HTMLElement>("emptyField"));
 
 element<HTMLButtonElement>("refresh").addEventListener("click", () => {
   void render();
@@ -27,7 +31,9 @@ function renderLearning(state: RuntimeState): void {
   const progress = warmupProgress(state);
   const isDone = progress >= 1;
   learning.hidden = isDone;
-  fill.style.height = `${Math.round(progress * 100)}%`;
+  const percent = Math.round(progress * 100);
+  fill.style.width = `${percent}%`;
+  learningPct.textContent = `${percent}%`;
   learningText.textContent = `${state.events.length} / ${state.settings.warmupEventTarget} events`;
 }
 
@@ -48,7 +54,8 @@ function actionItem(action: ExtensionAction): HTMLElement {
   const title = document.createElement("strong");
   title.textContent = action.label;
   const meta = document.createElement("span");
-  meta.textContent = relativeTime(action.at);
+  meta.className = "meta cipher";
+  meta.textContent = action.undone ? `${relativeTime(action.at)} · reverted` : relativeTime(action.at);
   copy.append(title, meta);
 
   const controls = document.createElement("div");

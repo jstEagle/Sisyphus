@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  learnFromManualUngroup,
   learnFromUndo,
   learnWorkflowSwitch,
   planAutomation,
@@ -23,7 +24,7 @@ describe("engine", () => {
     expect(warmupProgress(state)).toBe(0.5);
   });
 
-  it("groups tabs with learned related categories", () => {
+  it("does not group tabs by default", () => {
     let state = createInitialState();
     const tabs = [
       tab({ id: 1, url: "https://github.com/a", domain: "github.com", index: 0 }),
@@ -34,7 +35,44 @@ describe("engine", () => {
 
     const plans = planAutomation(state, tabs, now);
 
+    expect(plans.some((plan) => plan.type === "group-tabs")).toBe(false);
+  });
+
+  it("can group tabs when grouping is explicitly enabled and category evidence is strong", () => {
+    let state = createInitialState({
+      ...createInitialState().settings,
+      allowGroup: true
+    });
+    const tabs = [
+      tab({ id: 1, url: "https://github.com/a", domain: "github.com", index: 0 }),
+      tab({ id: 2, url: "https://github.com/b", domain: "github.com", index: 1 }),
+      tab({ id: 3, url: "https://example.com", domain: "example.com", index: 2 })
+    ];
+    for (let index = 0; index < 6; index += 1) {
+      state = rememberTabs(state, tabs);
+    }
+
+    const plans = planAutomation(state, tabs, now);
+
     expect(plans.some((plan) => plan.type === "group-tabs" && plan.tabs.length === 2)).toBe(true);
+  });
+
+  it("learns not to restage a tab when the user pulls it out of Later", () => {
+    let state = createInitialState();
+    const oldTab = tab({
+      id: 1,
+      url: "https://old.example.com/still-needed",
+      domain: "old.example.com",
+      groupTitle: "Later",
+      lastAccessedAt: now - 30 * 3_600_000
+    });
+    state = rememberTabs(state, [oldTab]);
+    state = learnFromManualUngroup(state, oldTab, "Later");
+
+    const { groupTitle: _groupTitle, groupId: _groupId, ...currentTab } = oldTab;
+    const plans = planAutomation(state, [currentTab], now);
+
+    expect(plans.some((plan) => plan.type === "move-to-cleanup")).toBe(false);
   });
 
   it("keeps workflow-paired tabs adjacent", () => {
