@@ -10,6 +10,7 @@ export function defaultSettings(): Settings {
   return {
     enabled: true,
     onboarded: false,
+    learningMode: false,
     managementLevel: level,
     allowOpen: permissions.allowOpen,
     allowClose: permissions.allowClose,

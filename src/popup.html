@@ -35,6 +35,10 @@
         <p class="cipher panel-label">Permissions</p>
         <div class="toggles">
           <label class="toggle-row">
+            <span>Learning notifications</span>
+            <span class="switch"><input id="learningMode" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
+          </label>
+          <label class="toggle-row">
             <span>Reorder tabs</span>
             <span class="switch"><input id="allowReorder" type="checkbox" /><span class="track" aria-hidden="true"></span></span>
           </label>
@@ -61,6 +65,20 @@
               <span class="cipher">hrs</span>
             </span>
           </label>
+        </div>
+      </section>
+
+      <section id="feedbackPanel" class="panel feedback-panel" hidden>
+        <div class="feedback-head">
+          <p class="cipher panel-label">Latest action feedback</p>
+          <p id="feedbackAction" class="feedback-action"></p>
+        </div>
+        <div class="feedback-scale" id="feedbackScale" role="group" aria-label="Rate latest Sisyphus action">
+          <button type="button" data-feedback="very-bad">Very bad</button>
+          <button type="button" data-feedback="bad">Bad</button>
+          <button type="button" data-feedback="neutral">Neutral</button>
+          <button type="button" data-feedback="good">Good</button>
+          <button type="button" data-feedback="very-good">Very good</button>
         </div>
       </section>
 

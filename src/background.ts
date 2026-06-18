@@ -1,6 +1,7 @@
 import { extensionConfig } from "./core/config";
 import {
   createAction,
+  learnFromActionFeedback,
   learnFromManualUngroup,
   learnFromUndo,
   learnWorkflowSwitch,
@@ -15,6 +16,7 @@ import {
 } from "./core/engine";
 import { exportState, importState, loadState, saveState } from "./core/state";
 import type {
+  ActionFeedbackRating,
   ExtensionAction,
   GroupColor,
   PlannedAction,
@@ -27,6 +29,7 @@ import { domainFromUrl } from "./core/url";
 const CLEANUP_GROUP_TITLE = "Later";
 const MENU_PROTECT_TAB = "protect-tab";
 const MENU_PROTECT_GROUP = "protect-group";
+const FEEDBACK_NOTIFICATION_PREFIX = "sisyphus-feedback:";
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   await ensureSetup();
@@ -45,6 +48,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   void handleContextMenu(info.menuItemId.toString(), tab);
+});
+
+chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+  void handleFeedbackNotificationButton(notificationId, buttonIndex);
+});
+
+chrome.notifications.onClicked.addListener((notificationId) => {
+  void openFeedbackPopup(notificationId);
 });
 
 chrome.tabs.onCreated.addListener((tab) => {
@@ -224,6 +235,10 @@ async function handleMessage(message: unknown): Promise<unknown> {
     return redoAction(message.actionId);
   }
 
+  if (message.type === "submit-feedback") {
+    return submitActionFeedback(message.actionId, message.rating);
+  }
+
   if (message.type === "export") {
     return exportState();
   }
@@ -335,7 +350,51 @@ async function executePlan(state: RuntimeState, plan: PlannedAction): Promise<Ru
     await chrome.tabs.remove(plan.tabs.map((tab) => tab.id).filter(isNumber));
   }
 
-  return pushAction(state, action);
+  const next = pushAction(state, action);
+  if (state.settings.learningMode) {
+    await showFeedbackNotification(action);
+  }
+  return next;
+}
+
+async function submitActionFeedback(
+  actionId: string,
+  rating: ActionFeedbackRating
+): Promise<RuntimeState> {
+  chrome.notifications.clear(notificationIdForAction(actionId));
+  return withState(async (state) => learnFromActionFeedback(state, actionId, rating));
+}
+
+async function showFeedbackNotification(action: ExtensionAction): Promise<void> {
+  await chrome.notifications.create(notificationIdForAction(action.id), {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL("icon-128.png"),
+    title: "Sisyphus acted",
+    message: action.label,
+    contextMessage: "Good/Bad tunes immediately. Click for the full scale.",
+    priority: 1,
+    buttons: [{ title: "Good" }, { title: "Bad" }]
+  });
+}
+
+async function handleFeedbackNotificationButton(
+  notificationId: string,
+  buttonIndex: number
+): Promise<void> {
+  const actionId = actionIdFromNotification(notificationId);
+  if (!actionId) return;
+  await submitActionFeedback(actionId, buttonIndex === 0 ? "good" : "bad");
+}
+
+async function openFeedbackPopup(notificationId: string): Promise<void> {
+  const actionId = actionIdFromNotification(notificationId);
+  if (!actionId) return;
+  await chrome.windows.create({
+    url: chrome.runtime.getURL(`popup.html?feedback=${encodeURIComponent(actionId)}`),
+    type: "popup",
+    width: 380,
+    height: 620
+  });
 }
 
 async function undoLastAction(): Promise<RuntimeState> {
@@ -490,11 +549,20 @@ function isNumber(value: number | undefined): value is number {
   return typeof value === "number";
 }
 
+function notificationIdForAction(actionId: string): string {
+  return `${FEEDBACK_NOTIFICATION_PREFIX}${actionId}`;
+}
+
+function actionIdFromNotification(notificationId: string): string | undefined {
+  if (!notificationId.startsWith(FEEDBACK_NOTIFICATION_PREFIX)) return undefined;
+  return notificationId.slice(FEEDBACK_NOTIFICATION_PREFIX.length);
+}
 
 function isMessage(message: unknown): message is {
   type: string;
   settings?: Partial<RuntimeState["settings"]>;
   actionId: string;
+  rating: ActionFeedbackRating;
   payload: string;
 } {
   return typeof message === "object" && message !== null && "type" in message;

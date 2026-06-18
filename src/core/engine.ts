@@ -1,4 +1,5 @@
 import type {
+  ActionFeedbackRating,
   DomainLearning,
   ExtensionAction,
   GroupColor,
@@ -8,6 +9,7 @@ import type {
   TabCandidate,
   TabEvent,
   TabEventType,
+  TabPreference,
   TabSnapshot
 } from "./types";
 import { normalizeUrlForProtection, pairKey } from "./url";
@@ -149,6 +151,123 @@ export function learnFromUndo(state: RuntimeState, action: ExtensionAction): Run
   return next;
 }
 
+export function learnFromActionFeedback(
+  state: RuntimeState,
+  actionId: string,
+  rating: ActionFeedbackRating,
+  now = Date.now()
+): RuntimeState {
+  const action = state.actions.find((item) => item.id === actionId);
+  if (!action) return state;
+  const weight = feedbackWeight(rating);
+  const domains = { ...state.domains };
+  const categories = { ...state.categories };
+  const workflowPairs = { ...state.workflowPairs };
+  const tabPreferences = { ...state.tabPreferences };
+
+  for (const snapshot of action.snapshots) {
+    const domain = domainFromSnapshot(snapshot.url);
+    const existing = domains[domain] ?? createDomainLearning(domain, now);
+    const preferenceKey = normalizeUrlForProtection(snapshot.url);
+    const existingPreference = tabPreferences[preferenceKey] ?? {
+      url: preferenceKey,
+      ungroupCount: 0,
+      updatedAt: now
+    };
+
+    let nextDomain = {
+      ...existing,
+      lastSeenAt: now
+    };
+    let nextPreference = {
+      ...existingPreference,
+      updatedAt: now
+    };
+
+    if (action.type === "group-tabs") {
+      nextDomain = tuneGrouping(nextDomain, weight);
+      if (weight < 0) {
+        nextPreference = {
+          ...nextPreference,
+          avoidGroupingUntil: now + avoidDurationForFeedback(rating)
+        };
+      } else {
+        nextPreference = withoutAvoidance(nextPreference, "avoidGroupingUntil");
+      }
+      const categoryId = nextDomain.categoryId;
+      if (categoryId) {
+        const category = categories[categoryId];
+        if (category) {
+          categories[categoryId] = {
+            ...category,
+            score: Math.max(0, category.score + weight),
+            updatedAt: now
+          };
+        }
+      }
+    }
+
+    if (action.type === "move-to-cleanup") {
+      nextDomain = tuneCleanup(nextDomain, weight);
+      if (weight < 0) {
+        nextPreference = {
+          ...nextPreference,
+          avoidCleanupUntil: now + avoidDurationForFeedback(rating)
+        };
+      } else {
+        nextPreference = withoutAvoidance(nextPreference, "avoidCleanupUntil");
+      }
+    }
+
+    if (action.type === "move-tabs") {
+      nextDomain = tuneMoving(nextDomain, weight);
+      if (weight < 0) {
+        nextPreference = {
+          ...nextPreference,
+          avoidMovingUntil: now + avoidDurationForFeedback(rating)
+        };
+      } else {
+        nextPreference = withoutAvoidance(nextPreference, "avoidMovingUntil");
+      }
+    }
+
+    if (action.type === "close-tabs") {
+      nextDomain = tuneClosing(nextDomain, weight);
+    }
+
+    domains[domain] = nextDomain;
+    tabPreferences[preferenceKey] = nextPreference;
+  }
+
+  if (action.type === "move-tabs" && action.snapshots.length > 0) {
+    for (const pair of Object.values(workflowPairs)) {
+      if (action.snapshots.some((snapshot) => domainFromSnapshot(snapshot.url) === pair.rightDomain)) {
+        workflowPairs[pair.key] = {
+          ...pair,
+          score: Math.max(0, pair.score + weight),
+          lastSeenAt: now
+        };
+      }
+    }
+  }
+
+  return {
+    ...state,
+    actions: state.actions.map((item) =>
+      item.id === actionId
+        ? {
+            ...item,
+            feedback: rating
+          }
+        : item
+    ),
+    categories,
+    domains,
+    workflowPairs,
+    tabPreferences
+  };
+}
+
 export function learnFromManualUngroup(
   state: RuntimeState,
   tab: TabSnapshot,
@@ -223,7 +342,7 @@ export function planAutomation(
   tabs: TabSnapshot[],
   now = Date.now()
 ): PlannedAction[] {
-  if (!state.settings.enabled) return [];
+  if (!state.settings.enabled || !state.settings.onboarded) return [];
 
   const candidates = tabs.map<TabCandidate>((tab) => ({
     ...tab,
@@ -379,6 +498,7 @@ function planWorkflowMoves(state: RuntimeState, tabs: TabCandidate[]): PlannedAc
     const left = tabs.find((tab) => !tab.protected && tab.domain === pair.leftDomain);
     const right = tabs.find((tab) => !tab.protected && tab.domain === pair.rightDomain);
     if (!left || !right || left.windowId !== right.windowId) continue;
+    if (shouldAvoidMoving(state, right)) continue;
     if (Math.abs(left.index - right.index) <= 1) continue;
 
     return [
@@ -399,8 +519,11 @@ function planCleanupGroups(
   tabs: TabCandidate[],
   now: number
 ): PlannedAction[] {
+  if (isWarmup(state)) return [];
+
   const inactive = tabs.filter((tab) => {
     if (tab.protected || !tab.id) return false;
+    if (tab.active || tab.pinned || tab.audible || tab.groupId !== undefined) return false;
     if (shouldAvoidCleanup(state, tab, now)) return false;
     const inactiveHours = (now - tab.lastAccessedAt) / 3_600_000;
     const threshold = inactiveThresholdForTab(state, tab) * 0.95;
@@ -436,6 +559,7 @@ function planCloses(state: RuntimeState, tabs: TabCandidate[], now: number): Pla
 }
 
 function isProtected(state: RuntimeState, tab: TabSnapshot): boolean {
+  if (tab.pinned) return true;
   if (state.protectedTabs[normalizeUrlForProtection(tab.url)]) return true;
   if (tab.groupTitle && state.protectedGroups[tab.groupTitle]) return true;
   return false;
@@ -445,14 +569,21 @@ function shouldAvoidGrouping(state: RuntimeState, tab: TabSnapshot): boolean {
   const preference = state.tabPreferences[normalizeUrlForProtection(tab.url)];
   if (preference?.avoidGroupingUntil && preference.avoidGroupingUntil > Date.now()) return true;
   const domain = state.domains[tab.domain];
-  return (domain?.groupDislikeScore ?? 0) >= 6;
+  return (domain?.groupDislikeScore ?? 0) - (domain?.groupLikeScore ?? 0) >= 6;
 }
 
 function shouldAvoidCleanup(state: RuntimeState, tab: TabSnapshot, now: number): boolean {
   const preference = state.tabPreferences[normalizeUrlForProtection(tab.url)];
   if (preference?.avoidCleanupUntil && preference.avoidCleanupUntil > now) return true;
   const domain = state.domains[tab.domain];
-  return (domain?.cleanupDislikeScore ?? 0) >= 6;
+  return (domain?.cleanupDislikeScore ?? 0) - (domain?.cleanupLikeScore ?? 0) >= 6;
+}
+
+function shouldAvoidMoving(state: RuntimeState, tab: TabSnapshot): boolean {
+  const preference = state.tabPreferences[normalizeUrlForProtection(tab.url)];
+  if (preference?.avoidMovingUntil && preference.avoidMovingUntil > Date.now()) return true;
+  const domain = state.domains[tab.domain];
+  return (domain?.moveDislikeScore ?? 0) - (domain?.moveLikeScore ?? 0) >= 6;
 }
 
 function inactiveThresholdForTab(state: RuntimeState, tab: TabSnapshot): number {
@@ -460,8 +591,8 @@ function inactiveThresholdForTab(state: RuntimeState, tab: TabSnapshot): number 
   if (!learning) return state.settings.inactiveCloseHours;
   const learned = learning.inactiveCloseHours ?? state.settings.inactiveCloseHours;
   const keepBias = Math.max(0, learning.keepScore - learning.closeScore);
-  const cleanupDislikeBias = (learning.cleanupDislikeScore ?? 0) * 3;
-  return Math.min(96, learned + keepBias * 0.5 + learning.reopenCount * 3 + cleanupDislikeBias);
+  const cleanupBias = ((learning.cleanupDislikeScore ?? 0) - (learning.cleanupLikeScore ?? 0)) * 3;
+  return Math.min(168, Math.max(1, learned + keepBias * 0.5 + learning.reopenCount * 3 + cleanupBias));
 }
 
 function categoryForDomain(
@@ -521,12 +652,114 @@ function createDomainLearning(domain: string, at: number): DomainLearning {
     domain,
     keepScore: 0,
     closeScore: 0,
+    groupLikeScore: 0,
     groupDislikeScore: 0,
+    cleanupLikeScore: 0,
     cleanupDislikeScore: 0,
+    moveLikeScore: 0,
+    moveDislikeScore: 0,
     reopenCount: 0,
     undoCount: 0,
     lastSeenAt: at
   };
+}
+
+function feedbackWeight(rating: ActionFeedbackRating): number {
+  if (rating === "very-good") return 10;
+  if (rating === "good") return 5;
+  if (rating === "bad") return -8;
+  if (rating === "very-bad") return -16;
+  return 0;
+}
+
+function avoidDurationForFeedback(rating: ActionFeedbackRating): number {
+  if (rating === "very-bad") return 30 * 24 * 3_600_000;
+  if (rating === "bad") return 7 * 24 * 3_600_000;
+  return 0;
+}
+
+function tuneGrouping(domain: DomainLearning, weight: number): DomainLearning {
+  if (weight >= 0) {
+    return {
+      ...domain,
+      groupLikeScore: (domain.groupLikeScore ?? 0) + weight,
+      groupDislikeScore: Math.max(0, (domain.groupDislikeScore ?? 0) - weight)
+    };
+  }
+  return {
+    ...domain,
+    keepScore: domain.keepScore + Math.abs(weight) * 0.5,
+    groupDislikeScore: (domain.groupDislikeScore ?? 0) + Math.abs(weight),
+    groupLikeScore: Math.max(0, (domain.groupLikeScore ?? 0) + weight)
+  };
+}
+
+function tuneCleanup(domain: DomainLearning, weight: number): DomainLearning {
+  if (weight >= 0) {
+    return {
+      ...domain,
+      cleanupLikeScore: (domain.cleanupLikeScore ?? 0) + weight,
+      cleanupDislikeScore: Math.max(0, (domain.cleanupDislikeScore ?? 0) - weight),
+      closeScore: domain.closeScore + weight * 0.5,
+      inactiveCloseHours: Math.max(1, (domain.inactiveCloseHours ?? 15) - weight)
+    };
+  }
+  return {
+    ...domain,
+    keepScore: domain.keepScore + Math.abs(weight),
+    cleanupDislikeScore: (domain.cleanupDislikeScore ?? 0) + Math.abs(weight),
+    cleanupLikeScore: Math.max(0, (domain.cleanupLikeScore ?? 0) + weight),
+    closeScore: Math.max(0, domain.closeScore + weight),
+    inactiveCloseHours: Math.min(168, (domain.inactiveCloseHours ?? 15) + Math.abs(weight) * 2)
+  };
+}
+
+function tuneMoving(domain: DomainLearning, weight: number): DomainLearning {
+  if (weight >= 0) {
+    return {
+      ...domain,
+      moveLikeScore: (domain.moveLikeScore ?? 0) + weight,
+      moveDislikeScore: Math.max(0, (domain.moveDislikeScore ?? 0) - weight)
+    };
+  }
+  return {
+    ...domain,
+    moveDislikeScore: (domain.moveDislikeScore ?? 0) + Math.abs(weight),
+    moveLikeScore: Math.max(0, (domain.moveLikeScore ?? 0) + weight)
+  };
+}
+
+function tuneClosing(domain: DomainLearning, weight: number): DomainLearning {
+  if (weight >= 0) {
+    return {
+      ...domain,
+      closeScore: domain.closeScore + weight,
+      inactiveCloseHours: Math.max(1, (domain.inactiveCloseHours ?? 15) - weight)
+    };
+  }
+  return {
+    ...domain,
+    keepScore: domain.keepScore + Math.abs(weight),
+    closeScore: Math.max(0, domain.closeScore + weight),
+    inactiveCloseHours: Math.min(168, (domain.inactiveCloseHours ?? 15) + Math.abs(weight) * 2)
+  };
+}
+
+function domainFromSnapshot(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "unknown";
+  }
+}
+
+function withoutAvoidance(
+  preference: TabPreference,
+  key: "avoidGroupingUntil" | "avoidCleanupUntil" | "avoidMovingUntil"
+): TabPreference {
+  const next = { ...preference };
+  delete next[key];
+  return next;
 }
 
 function tabEventFromSnapshot(

@@ -1,5 +1,5 @@
 body {
-  width: 340px;
+  width: 360px;
 }
 
 .popup {
@@ -92,6 +92,43 @@ body {
 
 .hours input {
   width: 58px;
+}
+
+.feedback-panel {
+  border-top: 1px solid var(--line);
+  padding-top: 2px;
+}
+
+.feedback-head {
+  display: grid;
+  gap: 4px;
+}
+
+.feedback-action {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.feedback-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.feedback-scale button {
+  min-height: 34px;
+  padding: 0 4px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  white-space: normal;
+}
+
+.feedback-scale button.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .actions {

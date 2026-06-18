@@ -25,6 +25,8 @@ export type ActionType =
   | "protect-tab"
   | "protect-group";
 
+export type ActionFeedbackRating = "very-bad" | "bad" | "neutral" | "good" | "very-good";
+
 export type GroupColor =
   | "grey"
   | "blue"
@@ -58,6 +60,7 @@ export interface ExtensionConfig {
 export interface Settings {
   enabled: boolean;
   onboarded: boolean;
+  learningMode: boolean;
   managementLevel: ManagementLevel;
   allowOpen: boolean;
   allowClose: boolean;
@@ -112,8 +115,12 @@ export interface DomainLearning {
   categoryId?: string;
   keepScore: number;
   closeScore: number;
+  groupLikeScore?: number;
   groupDislikeScore?: number;
+  cleanupLikeScore?: number;
   cleanupDislikeScore?: number;
+  moveLikeScore?: number;
+  moveDislikeScore?: number;
   reopenCount: number;
   undoCount: number;
   lastSeenAt: number;
@@ -145,6 +152,7 @@ export interface TabPreference {
   ungroupCount: number;
   avoidGroupingUntil?: number;
   avoidCleanupUntil?: number;
+  avoidMovingUntil?: number;
   updatedAt: number;
 }
 
@@ -169,6 +177,7 @@ export interface ExtensionAction {
   redone?: boolean;
   snapshots: ActionSnapshot[];
   meta?: Record<string, string | number | boolean>;
+  feedback?: ActionFeedbackRating;
 }
 
 export interface RuntimeState {

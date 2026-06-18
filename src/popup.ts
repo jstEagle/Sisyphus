@@ -1,13 +1,20 @@
 import "./styles.css";
 import "./popup.css";
 import { extensionConfig, settingsForLevel } from "./core/config";
-import type { ManagementLevel, RuntimeState, Settings } from "./core/types";
+import type {
+  ActionFeedbackRating,
+  ExtensionAction,
+  ManagementLevel,
+  RuntimeState,
+  Settings
+} from "./core/types";
 import { decode } from "./ui/fx";
 import { loadRuntimeState, sendMessage } from "./ui/messages";
 
 let state: RuntimeState;
 
 const enabled = element<HTMLInputElement>("enabled");
+const learningMode = element<HTMLInputElement>("learningMode");
 const level = element<HTMLElement>("level");
 const allowReorder = element<HTMLInputElement>("allowReorder");
 const allowGroup = element<HTMLInputElement>("allowGroup");
@@ -19,10 +26,14 @@ const status = element<HTMLElement>("status");
 const statusDot = element<HTMLElement>("statusDot");
 const protectedCount = element<HTMLElement>("protectedCount");
 const importFile = element<HTMLInputElement>("importFile");
+const feedbackPanel = element<HTMLElement>("feedbackPanel");
+const feedbackAction = element<HTMLElement>("feedbackAction");
+const feedbackScale = element<HTMLElement>("feedbackScale");
 
 void render();
 
 enabled.addEventListener("change", () => save({ enabled: enabled.checked }));
+learningMode.addEventListener("change", () => save({ learningMode: learningMode.checked }));
 
 level.addEventListener("click", (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-level]");
@@ -45,6 +56,13 @@ for (const input of [allowReorder, allowGroup, allowCleanupGroup, allowClose, al
 
 inactiveHours.addEventListener("change", () => {
   save({ inactiveCloseHours: Number(inactiveHours.value) });
+});
+
+feedbackScale.addEventListener("click", (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-feedback]");
+  const action = selectedFeedbackAction();
+  if (!button || !action) return;
+  void submitFeedback(action.id, button.dataset.feedback as ActionFeedbackRating);
 });
 
 element<HTMLButtonElement>("sidebar").addEventListener("click", () => {
@@ -74,6 +92,7 @@ async function render(): Promise<void> {
   state = await loadRuntimeState();
   const settings = state.settings;
   enabled.checked = settings.enabled;
+  learningMode.checked = settings.learningMode;
   level.querySelectorAll<HTMLButtonElement>("button[data-level]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.level === settings.managementLevel);
   });
@@ -96,6 +115,7 @@ async function render(): Promise<void> {
   protectedCount.textContent = `${Object.keys(state.protectedTabs).length + Object.keys(state.protectedGroups).length} protected`;
   const github = element<HTMLAnchorElement>("github");
   github.href = extensionConfig.githubUrl;
+  renderFeedback();
 }
 
 async function save(settings: Partial<Settings>): Promise<void> {
@@ -121,6 +141,33 @@ async function openStack(): Promise<void> {
 
   await sendMessage({ type: "open-sidebar" });
   window.close();
+}
+
+function renderFeedback(): void {
+  const action = selectedFeedbackAction();
+  feedbackPanel.hidden = !state.settings.learningMode || !action;
+  if (!action) return;
+
+  feedbackAction.textContent = action.label;
+  feedbackScale.querySelectorAll<HTMLButtonElement>("button[data-feedback]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.feedback === action.feedback);
+  });
+}
+
+function selectedFeedbackAction(): ExtensionAction | undefined {
+  const actionId = new URLSearchParams(location.search).get("feedback");
+  if (actionId) {
+    return state.actions.find((action) => action.id === actionId);
+  }
+  return state.actions.find((action) => !action.undone);
+}
+
+async function submitFeedback(
+  actionId: string,
+  rating: ActionFeedbackRating
+): Promise<void> {
+  state = await sendMessage<RuntimeState>({ type: "submit-feedback", actionId, rating });
+  renderFeedback();
 }
 
 function element<T extends HTMLElement>(id: string): T {

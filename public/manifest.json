@@ -3,9 +3,13 @@
   "name": "Sisyphus",
   "version": "0.1.0",
   "description": "Quietly learns how you use tabs and keeps them organized.",
+  "icons": {
+    "128": "icon-128.png"
+  },
   "permissions": [
     "alarms",
     "contextMenus",
+    "notifications",
     "sessions",
     "sidePanel",
     "storage",
@@ -19,6 +23,7 @@
   },
   "action": {
     "default_title": "Sisyphus",
+    "default_icon": "icon-128.png",
     "default_popup": "popup.html"
   },
   "side_panel": {
