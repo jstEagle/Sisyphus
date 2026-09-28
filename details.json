@@ -1,8 +1,13 @@
 {
   "schemaVersion": 1,
   "title": "Sisyphus",
-  "description": "A local-first Chrome extension that learns from tab behavior, quietly organizes related and stale tabs, and keeps every automated action reversible.",
-  "tags": ["Chrome Extension", "TypeScript", "Vite", "Manifest V3"],
+  "description": "A local Chrome tab shelf for setting aside background tabs, restoring saved tabs, and removing duplicates, with optional automation kept under explicit user control.",
+  "tags": [
+    "Chrome Extension",
+    "TypeScript",
+    "Vite",
+    "Manifest V3"
+  ],
   "featured": false,
   "links": {
     "repo": "https://github.com/jstEagle/Sisyphus"
