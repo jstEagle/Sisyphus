@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "title": "Sisyphus",
-  "description": "A local Chrome tab shelf for setting aside background tabs, restoring saved tabs, and removing duplicates, with optional automation kept under explicit user control.",
+  "description": "A Chrome extension that learns tab habits locally, groups related tabs, and cleans up stale tabs with configurable management levels, protected tabs, and reversible actions.",
   "tags": [
     "Chrome Extension",
     "TypeScript",
